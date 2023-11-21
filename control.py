@@ -9,9 +9,8 @@ class Control(MODI):
         super().__init__(modi_version, conn_type, verbose,
                          port, network_uuid, virtual_modules)
         self.CAR_MOTOR_FRONT = self.motors[0]
-        self.CAR_MOTOR_REAR = self.motors[1]
-        self.CRANE_MOTER = self.motors[2]
-        self.PUSH_MOTOR = self.motors[3]
+        self.CRANE_MOTER = self.motors[1]
+        self.PUSH_MOTOR = self.motors[2]
 
     def car_go_straight(self):
         self._car_move(CAR_SPEED, CAR_SPEED)
@@ -35,7 +34,6 @@ class Control(MODI):
 
     def _car_move(self, left_speed, right_speed):
         self.CAR_MOTOR_FRONT.speed = left_speed, right_speed
-        self.CAR_MOTOR_REAR.speed = left_speed, right_speed
 
     def _crane_move(self, speed):
         self.CRANE_MOTER.speed = speed, speed
