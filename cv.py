@@ -1,28 +1,14 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import csv
+from pathlib import Path
 
 import itertools
 from collections import deque
 
-from utils import Args
-
-
-def getArgs():
-    args = Args()
-    args.add("camIdx", 0)
-    args.add("width", 960)
-    args.add("height", 540)
-    args.add("allowedPoints", [4, 8, 12, 16, 20])
-    args.add("windowTitle", "Preproc")
-    args.add("min_tracking_confidence", 0.5)
-    args.add("min_detection_confidence", 0.7)
-    args.add("use_static_image_mode", False)
-    args.add("LandmarkPointColorOuter", (255, 255, 255))
-    args.add("LandmarkPointColorInner", (0, 0, 0))
-    args.add("LandmarkLineColor", (0, 0, 0))
-    args.add("BoundingBoxBorderColor", (255, 255, 255))
-    return args
+import gNet
+from utils import *
 
 
 class Preproc():
@@ -47,6 +33,37 @@ class Preproc():
             min_detection_confidence=self.min_detection_confidence,
             min_tracking_confidence=self.min_tracking_confidence,
         )
+        self.maxQsize = args.get("max_queue_size")
+
+        self.datasetMode = False
+        self.cindex = 0
+        self.clabel = getLabel()[self.cindex]
+        print(self.cindex, self.clabel)
+        self.queue = []
+
+        self.recognitionMode = True
+        gNetArgs = getGNetArgs()
+        self.model = None
+        if self.recognitionMode:
+            gnet = gNet.GestureNet(args=args)
+            self.model = gnet.model()
+            self.model.summary()
+            self.model.load_weights(
+                "./model/primary/model_output")
+            self.label = getLabel()
+
+    def handLM2dataset(self):
+        if not self.datasetMode:
+            return None
+        print("Create dataset")
+        with open("train.csv", 'a', newline='') as f:
+            w = csv.writer(f)
+            tmp = []
+            while (len(self.queue)):
+                hand, landmark = self.queue.pop()
+                landmark.insert(0, hand)
+                tmp.append(landmark)
+            w.writerows(tmp)
 
     def extractEdgeFilter(self, frame: cv2.Mat) -> cv2.Mat:
         return cv2.filter2D(frame, -1, self.gx_kernel) + cv2.filter2D(frame, -1, self.gy_kernel)
@@ -60,10 +77,9 @@ class Preproc():
 
     def absLMs2Relative(self, landmarkList: list) -> list:
         (std_x, std_y) = landmarkList[0]
-        lms = [[lm[0]-std_x, lm[1]-std_y] for lm in landmarkList]
-        lms = list(itertools.chain.from_iterable(lms))
-        m = max(list(map(abs, lms)))
-        lms = list(map(lambda x: x / m, lms))
+        m = max(list(itertools.chain.from_iterable(landmarkList)))
+        lms = [[(lm_x-std_x) / m, (lm_y-std_y) / m]
+               for (lm_x, lm_y) in landmarkList]
         return lms
 
     def drawLandmarkOnFrame(self, frame: cv2.Mat, lm) -> cv2.Mat:
@@ -120,6 +136,23 @@ class Preproc():
                     frame = self.drawBBoxOnFrame(frame, bbox)
                     lmList = self.handLM2List(
                         image_width, image_height, handLMs)
+
+                    hand = handedness.classification[0].label
+                    normal = list(itertools.chain.from_iterable(
+                        self.absLMs2Relative(lmList)))
+                    if hand[0] == self.clabel[0] and self.datasetMode:
+                        self.queue.append([self.cindex, normal])
+
+                    if len(self.queue) == self.maxQsize:
+                        self.handLM2dataset()
+
+                    if self.recognitionMode and not self.datasetMode:
+                        df = pd.DataFrame(normal).T
+                        pred = self.model.predict(df, verbose=0).tolist()
+                        print(
+                            f"{pred[0].index(max(pred[0]))} - {max(pred[0])}")
+                        print(self.label[pred[0].index(max(pred[0]))])
+
                     frame = self.drawLandmarkOnFrame(frame, lmList)
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             cv2.imshow(self.windowTitle, frame)
@@ -128,6 +161,6 @@ class Preproc():
 
 
 if __name__ == "__main__":
-    args = getArgs()
+    args = getCVArgs()
     obj = Preproc(args=args)
     obj.cameraInput()
