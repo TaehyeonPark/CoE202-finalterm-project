@@ -1,5 +1,6 @@
 from control import Control
 from enum import Enum
+from time import sleep
 
 class Stage(Enum):
   WAIT = 0

@@ -1,14 +1,15 @@
 from pymodi.modi import *
+from time import sleep
 
 CAR_SPEED = 50
-CRANE_SPEED = 30
+CRANE_SPEED = 40
 PUSH_SPEED = 50
 
 class Control(MODI):
     def __init__(self, modi_version: int = 1, conn_type: str = "", verbose: bool = False, port=None, network_uuid: str = "", virtual_modules=None):
         super().__init__(modi_version, conn_type, verbose,
                          port, network_uuid, virtual_modules)
-        self.CAR_MOTOR_FRONT = self.motors[0]
+        self.CAR_MOTOR = self.motors[0]
         self.CRANE_MOTER = self.motors[1]
         self.PUSH_MOTOR = self.motors[2]
 
@@ -33,7 +34,7 @@ class Control(MODI):
         self._push_move(0)
 
     def _car_move(self, left_speed, right_speed):
-        self.CAR_MOTOR_FRONT.speed = left_speed, right_speed
+        self.CAR_MOTOR.speed = left_speed, right_speed
 
     def _crane_move(self, speed):
         self.CRANE_MOTER.speed = speed, speed
