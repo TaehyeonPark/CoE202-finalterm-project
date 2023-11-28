@@ -11,7 +11,7 @@ import gNet
 from utils import *
 
 
-class Preproc():
+class CV():
     def __init__(self, args) -> None:
         self.camIdx = args.get("camIdx")
         self.width = args.get("width")
@@ -162,5 +162,5 @@ class Preproc():
 
 if __name__ == "__main__":
     args = getCVArgs()
-    obj = Preproc(args=args)
+    obj = CV(args=args)
     obj.cameraInput()
