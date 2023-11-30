@@ -38,11 +38,9 @@ class CV():
         self.datasetMode = False
         self.cindex = 0
         self.clabel = getLabel()[self.cindex]
-        print(self.cindex, self.clabel)
         self.queue = []
 
         self.recognitionMode = True
-        gNetArgs = getGNetArgs()
         self.model = None
         if self.recognitionMode:
             gnet = gNet.GestureNet(args=args)

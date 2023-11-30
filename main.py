@@ -1,13 +1,12 @@
-import itertools
-import cv2
-
-from cv import CV
-from gNet import GestureNet
-
 from utils import *
+from gNet import GestureNet
+from cv import CV
+import cv2
+import itertools
+import game
 
 
-def start(proc) -> None:
+def start(proc, api) -> None:
     cap = cv2.VideoCapture(proc.camIdx)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, proc.width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, proc.height)
@@ -53,7 +52,10 @@ def start(proc) -> None:
     cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
-    cvArgs = getCVArgs()
-    cv = CV(cvArgs)
-    start(cv)
+# if __name__ == "__main__":
+
+
+g = game.Game()
+cvArgs = getCVArgs()
+cv = CV(cvArgs, g)
+start(cv)

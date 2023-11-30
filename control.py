@@ -23,7 +23,7 @@ class Control(MODI):
         self._car_move(0, 0)
 
     def crane_pull_up(self):
-        self._crane_move(CRANE_SPEED);
+        self._crane_move(CRANE_SPEED)
     
     def crane_stop(self):
         self._crane_move(0)

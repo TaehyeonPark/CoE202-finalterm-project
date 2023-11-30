@@ -79,6 +79,3 @@ def getTrain2DF():
     X_train = df.loc[:, df.columns != 'mo_class']
     Y_train = df.loc[:, df.columns == 'mo_class']
     return X_train, Y_train
-
-
-print(getTrain2DF())
