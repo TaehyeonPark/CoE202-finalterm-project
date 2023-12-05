@@ -1,8 +1,8 @@
 from pymodi.modi import *
 from time import sleep
 
-CAR_SPEED = 50
-CRANE_SPEED = 40
+CAR_SPEED = -50
+CRANE_SPEED = -40
 PUSH_SPEED = 50
 
 
@@ -38,6 +38,11 @@ class Control(MODI):
         sleep(t)
         self._push_move(0)
 
+    def stop(self):
+        ctl._car_move(0, 0)
+        ctl._push_move(0)
+        ctl._crane_move(0)
+
     def _car_move(self, left_speed, right_speed):
         self.CAR_MOTOR.speed = left_speed, right_speed
 
@@ -45,40 +50,35 @@ class Control(MODI):
         self.CRANE_MOTER.speed = 0, speed
 
     def _push_move(self, speed):
-        self.PUSH_MOTOR.speed = speed, 0
+        # self.PUSH_MOTOR.speed = speed, 0
+        self.PUSH_MOTOR.speed = 0, speed
 
 
-def reset(ctl: Control):
-    ctl = Control()
-    ctl.CAR_MOTOR.speed = 0, -40
-    sleep(3)
-    ctl.car_stop()
+# def reset(ctl: Control):
+#     ctl = Control()
+#     ctl.CAR_MOTOR.speed = 0, -40
+#     sleep(3)
+#     ctl.car_stop()
 
-    ctl._crane_move(-40)
-    sleep(1)
-    ctl.crane_stop()
+#     ctl._crane_move(-40)
+#     sleep(1)
+#     ctl.crane_stop()
 
 
 if __name__ == "__main__":
-    ## Scenario 1 ###
+    #     ### Scenario 1 ###
     ctl = Control()
-    # ctl.CAR_MOTOR.speed = 0, 40
-    # sleep(3)
-    # ctl.car_stop()
+#     ctl.CAR_MOTOR.speed = 0, 50
+#     sleep(1)
+#     ctl.car_stop()
 
-    # ctl._crane_move(40)
-    # sleep(1)
-    # ctl.crane_stop()
+#     ctl._crane_move(-40)
+#     sleep(2)
+#     ctl.crane_stop()
 
-    # ctl.push(1)
+#     ctl._push_move(50)
+#     sleep(1.5)
+#     ctl._push_move(-50)
+#     sleep(1.5)
 
-    # reset(ctl=ctl)
-    # ctl.CAR_MOTOR.speed = 0, 40
-
-    ctl._crane_move(-40)
-    sleep(1)
-    ctl.crane_stop()
-
-    ctl._car_move(0)
-    ctl._push_move(0)
-    ctl._crane_move(0)
+    ctl.stop()

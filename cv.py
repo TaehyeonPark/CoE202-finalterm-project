@@ -116,8 +116,9 @@ class CV():
         cap = cv2.VideoCapture(self.camIdx)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+
         while True:
-            key = cv2.waitKey(10)
+            key = cv2.waitKey(29)
             if key == 27:
                 break
             ret, frame = cap.read()

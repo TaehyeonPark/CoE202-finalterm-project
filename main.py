@@ -6,10 +6,13 @@ import itertools
 import game
 
 
-def start(proc, api) -> None:
-    cap = cv2.VideoCapture(proc.camIdx)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, proc.width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, proc.height)
+def start(cvproc, gameapi: game.Game = None) -> None:
+    cap = cv2.VideoCapture(cvproc.camIdx)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, cvproc.width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cvproc.height)
+    state = 0
+    gameapi.game_start()
+    print('[DEBUG] gameapi.game_start()')
     while True:
         key = cv2.waitKey(10)
         if key == 27:
@@ -21,41 +24,49 @@ def start(proc, api) -> None:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         image_width, image_height = frame.shape[1], frame.shape[0]
-        res = proc.extractFeatures(frame=frame)
+        res = cvproc.extractFeatures(frame=frame)
         if res:
             for handLMs, handedness in zip(res.multi_hand_landmarks, res.multi_handedness):
-                bbox = proc.LMs2BBox(image_width, image_height, handLMs)
-                frame = proc.drawBBoxOnFrame(frame, bbox)
-                lmList = proc.handLM2List(
+                bbox = cvproc.LMs2BBox(image_width, image_height, handLMs)
+                frame = cvproc.drawBBoxOnFrame(frame, bbox)
+                lmList = cvproc.handLM2List(
                     image_width, image_height, handLMs)
 
                 hand = handedness.classification[0].label
                 normal = list(itertools.chain.from_iterable(
-                    proc.absLMs2Relative(lmList)))
-                if hand[0] == proc.clabel[0] and proc.datasetMode:
-                    proc.queue.append([proc.cindex, normal])
+                    cvproc.absLMs2Relative(lmList)))
+                if hand[0] == cvproc.clabel[0] and cvproc.datasetMode:
+                    cvproc.queue.append([cvproc.cindex, normal])
 
-                if len(proc.queue) == proc.maxQsize:
-                    proc.handLM2dataset()
+                if len(cvproc.queue) == cvproc.maxQsize:
+                    cvproc.handLM2dataset()
 
-                if proc.recognitionMode and not proc.datasetMode:
+                if cvproc.recognitionMode and not cvproc.datasetMode:
                     df = pd.DataFrame(normal).T
-                    pred = proc.model.predict(df, verbose=0).tolist()
-                    print(
-                        f"{pred[0].index(max(pred[0]))} - {max(pred[0])}")
-                    print(proc.label[pred[0].index(max(pred[0]))])
+                    pred = cvproc.model.predict(df, verbose=0).tolist()
+                    # print(
+                    #     f"{pred[0].index(max(pred[0]))} - {max(pred[0])}")
+                    # print(cvproc.label[pred[0].index(max(pred[0]))])
+                    if 'palm' in cvproc.label[pred[0].index(max(pred[0]))] and state == 0:
+                        print('[DEBUG] gameapi.start_crane()')
+                        state = 1
+                        gameapi.start_crane()
+                    if 'fist' in cvproc.label[pred[0].index(max(pred[0]))] and state == 1:
+                        print('[DEBUG] gameapi.start_push()')
+                        state = 2
+                        gameapi.start_push()
 
-                frame = proc.drawLandmarkOnFrame(frame, lmList)
+                frame = cvproc.drawLandmarkOnFrame(frame, lmList)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        cv2.imshow(proc.windowTitle, frame)
+        cv2.imshow(cvproc.windowTitle, frame)
     cap.release()
     cv2.destroyAllWindows()
 
 
-# if __name__ == "__main__":
-
-
-g = game.Game()
-cvArgs = getCVArgs()
-cv = CV(cvArgs, g)
-start(cv)
+if __name__ == "__main__":
+    g = game.Game()
+    # ctl = control.Control()
+    cvArgs = getCVArgs()
+    cv = CV(cvArgs)
+    start(cv, g)
+    start(cv)
