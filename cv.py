@@ -7,8 +7,8 @@ from pathlib import Path
 import itertools
 from collections import deque
 
-import gNet
 from utils import *
+import keras
 
 
 class CV():
@@ -40,17 +40,28 @@ class CV():
         self.clabel = getLabel()[self.cindex]
         self.queue = []
 
+        self.label = getLabel()
         self.recognitionMode = True
         self.model = None
-        if self.recognitionMode:
-            gnet = gNet.GestureNet(args=args)
-            self.model = gnet.model()
-            self.model.summary()
-            self.model.load_weights(
-                "./model/primary/model_output")
-            self.label = getLabel()
 
-    def handLM2dataset(self):
+        if self.recognitionMode:
+            # *********** Load by h5 ***********
+            self.model = keras.models.load_model(
+                './model/primary/model.h5')
+            # **********************************
+
+            # *********** Load by weights ***********
+            # import gNet
+            # gnet = gNet.GestureNet()
+            # backup_dir = Path('./model/') / "primary"
+            # ckpt_location = backup_dir / "model_ckpt.ckpt"
+            # self.model = gnet.model()
+            # self.model.load_weights(ckpt_location)
+            # ***************************************
+
+            self.model.summary()
+
+    def handLM2dataset(self) -> None:
         if not self.datasetMode:
             return None
         print("Create dataset")
@@ -63,9 +74,6 @@ class CV():
                 tmp.append(landmark)
             w.writerows(tmp)
 
-    def extractEdgeFilter(self, frame: cv2.Mat) -> cv2.Mat:
-        return cv2.filter2D(frame, -1, self.gx_kernel) + cv2.filter2D(frame, -1, self.gy_kernel)
-
     def extractFeatures(self, frame: cv2.Mat) -> cv2.Mat:
         result = self.hands.process(frame)
         return result if result.multi_hand_landmarks is not None else None
@@ -73,7 +81,7 @@ class CV():
     def handLM2List(self, img_w: int, img_h: int, landmarks) -> list[list[int, int]]:
         return [[min(img_w-1, int(lm.x*img_w)), min(img_h-1, int(lm.y * img_h))] for lm in landmarks.landmark]
 
-    def absLMs2Relative(self, landmarkList: list) -> list:
+    def stdLMs2Normal(self, landmarkList: list) -> list:
         (std_x, std_y) = landmarkList[0]
         m = max(list(itertools.chain.from_iterable(landmarkList)))
         lms = [[(lm_x-std_x) / m, (lm_y-std_y) / m]
@@ -112,7 +120,7 @@ class CV():
                       (bbox[2], bbox[3]), self.bboxC, 4)
         return frame
 
-    def cameraInput(self) -> None:
+    def testCV(self) -> None:
         cap = cv2.VideoCapture(self.camIdx)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
@@ -129,6 +137,7 @@ class CV():
 
             image_width, image_height = frame.shape[1], frame.shape[0]
             res = self.extractFeatures(frame=frame)
+
             if res:
                 for handLMs, handedness in zip(res.multi_hand_landmarks, res.multi_handedness):
                     bbox = self.LMs2BBox(image_width, image_height, handLMs)
@@ -138,21 +147,21 @@ class CV():
 
                     hand = handedness.classification[0].label
                     normal = list(itertools.chain.from_iterable(
-                        self.absLMs2Relative(lmList)))
+                        self.stdLMs2Normal(lmList)))
                     if hand[0] == self.clabel[0] and self.datasetMode:
                         self.queue.append([self.cindex, normal])
 
                     if len(self.queue) == self.maxQsize:
                         self.handLM2dataset()
-
                     if self.recognitionMode and not self.datasetMode:
                         df = pd.DataFrame(normal).T
                         pred = self.model.predict(df, verbose=0).tolist()
                         print(
-                            f"{pred[0].index(max(pred[0]))} - {max(pred[0])}")
-                        print(self.label[pred[0].index(max(pred[0]))])
+                            f"[RESULT] {self.label[pred[0].index(max(pred[0]))]}\t{(max(pred[0]) * 100):.2f}%", end='\r')
 
                     frame = self.drawLandmarkOnFrame(frame, lmList)
+
+        # *********** Show images on window ***********
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             cv2.imshow(self.windowTitle, frame)
         cap.release()
@@ -160,6 +169,6 @@ class CV():
 
 
 if __name__ == "__main__":
-    args = getCVArgs()
-    obj = CV(args=args)
-    obj.cameraInput()
+    cvargs = getCVArgs()
+    obj = CV(args=cvargs)
+    obj.testCV()

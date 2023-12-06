@@ -52,15 +52,6 @@ def getCVArgs():
     return args
 
 
-def getGNetArgs():
-    args = Args()
-    args.add("inputShape", (21, 2))
-    args.add("outputShape", (6))
-    args.add("getLabel", getLabel())
-    args.add("model_location", "./model/1700693117")
-    return args
-
-
 def initArgs():
     args = Args()
     return args

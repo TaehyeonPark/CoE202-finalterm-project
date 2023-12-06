@@ -12,7 +12,6 @@ def start(cvproc, gameapi: game.Game = None) -> None:
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cvproc.height)
     state = 0
     gameapi.game_start()
-    print('[DEBUG] gameapi.game_start()')
     while True:
         key = cv2.waitKey(10)
         if key == 27:
@@ -34,7 +33,7 @@ def start(cvproc, gameapi: game.Game = None) -> None:
 
                 hand = handedness.classification[0].label
                 normal = list(itertools.chain.from_iterable(
-                    cvproc.absLMs2Relative(lmList)))
+                    cvproc.stdLMs2Normal(lmList)))
                 if hand[0] == cvproc.clabel[0] and cvproc.datasetMode:
                     cvproc.queue.append([cvproc.cindex, normal])
 
@@ -44,15 +43,12 @@ def start(cvproc, gameapi: game.Game = None) -> None:
                 if cvproc.recognitionMode and not cvproc.datasetMode:
                     df = pd.DataFrame(normal).T
                     pred = cvproc.model.predict(df, verbose=0).tolist()
-                    # print(
-                    #     f"{pred[0].index(max(pred[0]))} - {max(pred[0])}")
-                    # print(cvproc.label[pred[0].index(max(pred[0]))])
+                    print(
+                        f"[RESULT] {cvproc.label[pred[0].index(max(pred[0]))]}\t{(max(pred[0]) * 100):.2f}%", end='\r')
                     if 'palm' in cvproc.label[pred[0].index(max(pred[0]))] and state == 0:
-                        print('[DEBUG] gameapi.start_crane()')
                         state = 1
                         gameapi.start_crane()
                     if 'fist' in cvproc.label[pred[0].index(max(pred[0]))] and state == 1:
-                        print('[DEBUG] gameapi.start_push()')
                         state = 2
                         gameapi.start_push()
 
@@ -65,7 +61,6 @@ def start(cvproc, gameapi: game.Game = None) -> None:
 
 if __name__ == "__main__":
     g = game.Game()
-    # ctl = control.Control()
     cvArgs = getCVArgs()
     cv = CV(cvArgs)
     start(cv, g)
