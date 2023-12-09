@@ -156,11 +156,12 @@ class CV():
                     if self.recognitionMode and not self.datasetMode:
                         df = pd.DataFrame(normal).T
                         pred = self.model.predict(df, verbose=0).tolist()
-                        print(
-                            f"[RESULT] {self.label[pred[0].index(max(pred[0]))]}\t{(max(pred[0]) * 100):.2f}%", end='\r')
+                        text = f"[RESULT] {self.label[pred[0].index(max(pred[0]))]} {(max(pred[0]) * 100):.2f}%"
+                        print(text, end='\r')
+                        cv2.putText(frame, text, (64, 128),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
                     frame = self.drawLandmarkOnFrame(frame, lmList)
-
         # *********** Show images on window ***********
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             cv2.imshow(self.windowTitle, frame)
